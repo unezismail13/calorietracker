@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>Pulse — Unez's Nutrition Coach</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0F17;
+    --card:#161D2A;
+    --card-soft:#131926;
+    --line:rgba(255,255,255,0.08);
+    --cal:#FF9457;
+    --cal2:#FFC15E;
+    --protein:#34D399;
+    --carbs:#60A5FA;
+    --fat:#F472B6;
+    --fiber:#22D3EE;
+  }
+  *{-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--bg);}
+  body{
+    font-family:'Inter',sans-serif;
+    color:#E7EBF3;
+    overscroll-behavior:none;
+    -webkit-font-smoothing:antialiased;
+  }
+  .font-display{font-family:'Space Grotesk',sans-serif;}
+  .safe-top{padding-top:max(2rem, env(safe-area-inset-top));}
+  .safe-bottom{padding-bottom:max(2rem, env(safe-area-inset-bottom));}
+  .glass{
+    background:linear-gradient(180deg, rgba(22,29,42,0.9), rgba(19,25,38,0.85));
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    border:1px solid var(--line);
+  }
+  .navbar{
+    background:rgba(14,18,27,0.75);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.07);
+  }
+  .tab-view{display:none;}
+  .tab-view.active{display:block;}
+  .nav-btn{transition:color .2s ease, transform .15s ease;}
+  .nav-btn.active{color:#fff;}
+  .nav-btn:not(.active){color:#5D6A82;}
+  .nav-btn:active{transform:scale(0.92);}
+  .ring-progress{transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), stroke .4s ease;}
+  .bar-fill{transition:width .8s cubic-bezier(.4,0,.2,1);}
+  .scale-tap:active{transform:scale(0.96);}
+  ::-webkit-scrollbar{display:none;}
+  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+  input[type=number]{-moz-appearance:textfield;}
+  .sheet{
+    animation:sheetUp .32s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+  .fade-in{animation:fadeIn .35s ease both;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .chip{border:1px solid var(--line);}
+  .chip.selected{background:#fff;color:#0B0F17;border-color:#fff;}
+  .food-row:active{background:rgba(255,255,255,0.04);}
+  .toast{animation:toastIn .25s ease both;}
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,10px);}to{opacity:1;transform:translate(-50%,0);}}
+</style>
+</head>
+<body class="min-h-screen">
+
+<div id="app" class="max-w-md mx-auto min-h-screen relative pb-32">
+
+  <!-- ===================== TODAY TAB ===================== -->
+  <section id="tab-today" class="tab-view active safe-top px-5">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <p class="text-[13px] text-[#6B7690]" id="greetingLine">Good day</p>
+        <h1 class="font-display text-[26px] font-semibold tracking-tight text-white">Unez</h1>
+      </div>
+      <div class="flex items-center gap-2 glass rounded-full px-3 py-2">
+        <button id="dateBack" class="w-6 h-6 flex items-center justify-center text-[#8A93AB] scale-tap">‹</button>
+        <span id="dateLabel" class="text-[13px] font-medium text-[#C7CEDD] w-[74px] text-center">Today</span>
+        <button id="dateFwd" class="w-6 h-6 flex items-center justify-center text-[#8A93AB] scale-tap">›</button>
+      </div>
+    </header>
+
+    <!-- Calorie Ring Card -->
+    <div class="glass rounded-3xl p-6 mb-5 fade-in">
+      <div class="flex items-center justify-between">
+        <div class="relative w-[168px] h-[168px] shrink-0">
+          <svg viewBox="0 0 200 200" class="w-full h-full -rotate-90">
+            <defs>
+              <linearGradient id="calGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="var(--cal)"/>
+                <stop offset="100%" stop-color="var(--cal2)"/>
+              </linearGradient>
+            </defs>
+            <circle cx="100" cy="100" r="86" fill="none" stroke="#232B3C" stroke-width="14"/>
+            <circle id="calRing" cx="100" cy="100" r="86" fill="none" stroke="url(#calGrad)" stroke-width="14" stroke-linecap="round" class="ring-progress" stroke-dasharray="540.4" stroke-dashoffset="540.4"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span id="calRemaining" class="font-display text-[32px] font-semibold text-white leading-none">0</span>
+            <span class="text-[11px] text-[#6B7690] mt-1">kcal left</span>
+          </div>
+        </div>
+        <div class="flex-1 pl-5 space-y-3">
+          <div>
+            <p class="text-[11px] text-[#6B7690]">Eaten</p>
+            <p class="font-display text-[18px] font-semibold text-white" id="calEaten">0</p>
+          </div>
+          <div>
+            <p class="text-[11px] text-[#6B7690]">Target</p>
+            <p class="font-display text-[18px] font-semibold text-white" id="calTarget">0</p>
+          </div>
+          <div class="pt-1">
+            <span id="calStatusPill" class="text-[11px] px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[#9AA4BC]">On track</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Macro Bars -->
+    <div class="glass rounded-3xl p-5 mb-5 fade-in">
+      <p class="text-[13px] font-medium text-[#C7CEDD] mb-4">Macros</p>
+      <div class="space-y-4" id="macroBarsToday"></div>
+    </div>
+
+    <!-- Quick Add -->
+    <div class="glass rounded-3xl p-5 mb-5 fade-in">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-[13px] font-medium text-[#C7CEDD]">Log food</p>
+      </div>
+      <div class="relative">
+        <input id="foodSearch" type="text" placeholder="Search roti, dal, paneer, oats…" autocomplete="off"
+          class="w-full bg-[#0F1420] border border-white/10 rounded-2xl px-4 py-3 text-[14px] text-white placeholder-[#5D6A82] outline-none focus:border-white/25">
+        <div id="searchResults" class="mt-2 rounded-2xl overflow-hidden border border-white/0"></div>
+      </div>
+    </div>
+
+    <!-- Meal Feed -->
+    <div id="mealFeed" class="space-y-4"></div>
+  </section>
+
+  <!-- ===================== BODY & GOALS TAB ===================== -->
+  <section id="tab-body" class="tab-view safe-top px-5">
+    <header class="mb-6">
+      <p class="text-[13px] text-[#6B7690]">Welcome back</p>
+      <h1 class="font-display text-[26px] font-semibold tracking-tight text-white">Unez</h1>
+    </header>
+
+    <div class="glass rounded-3xl p-5 mb-5 fade-in">
+      <p class="text-[13px] font-medium text-[#C7CEDD] mb-4">Your stats</p>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-[11px] text-[#6B7690]">Weight (kg)</label>
+          <input id="in_weight" type="number" step="0.1" class="mt-1 w-full bg-[#0F1420] border border-white/10 rounded-xl px-3 py-2.5 text-white text-[14px] outline-none focus:border-white/25">
+        </div>
+        <div>
+          <label class="text-[11px] text-[#6B7690]">Target weight (kg)</label>
+          <input id="in_targetWeight" type="number" step="0.1" class="mt-1 w-full bg-[#0F1420] border border-white/10 rounded-xl px-3 py-2.5 text-white text-[14px] outline-none focus:border-white/25">
+        </div>
+        <div>
+          <label class="text-[11px] text-[#6B7690]">Height (cm)</label>
+          <input id="in_height" type="number" step="0.1" class="mt-1 w-full bg-[#0F1420] border border-white/10 rounded-xl px-3 py-2.5 text-white text-[14px] outline-none focus:border-white/25">
+        </div>
+        <div>
+          <label class="text-[11px] text-[#6B7690]">Age</label>
+          <input id="in_age" type="number" class="mt-1 w-full bg-[#0F1420] border border-white/10 rounded-xl px-3 py-2.5 text-white text-[14px] outline-none focus:border-white/25">
+        </div>
+      </div>
+    </div>
+
+    <div class="glass rounded-3xl p-5 mb-5 fade-in">
+      <p class="text-[13px] font-medium text-[#C7CEDD] mb-3">Gender</p>
+      <div class="flex gap-2" id="genderChips">
+        <button data-val="male" class="chip flex-1 py-2.5 rounded-xl text-[13px] text-[#C7CEDD]">Male</button>
+        <button data-val="female" class="chip flex-1 py-2.5 rounded-xl text-[13px] text-[#C7CEDD]">Female</button>
+      </div>
+    </div>
+
+    <div class="glass rounded-3xl p-5 mb-5 fade-in">
+      <p class="text-[13px] font-medium text-[#C7CEDD] mb-3">Activity level</p>
+      <div class="grid grid-cols-2 gap-2" id="activityChips">
+        <button data-val="sedentary" class="chip py-2.5 rounded-xl text-[12.5px] text-[#C7CEDD]">Sedentary</button>
+        <button data-val="light" class="chip py-2.5 rounded-xl text-[12.5px] text-[#C7CEDD]">Lightly Active</button>
+        <button data-val="moderate" class="chip py-2.5 rounded-xl text-[12.5px] text-[#C7CEDD]">Moderately Active</button>
+        <button data-val="very" class="chip py-2.5 rounded-xl text-[12.5px] text-[#C7CEDD]">Very Active</button>
+      </div>
+    </div>
+
+    <div class="glass rounded-3xl p-5 mb-5 fade-in">
+      <p class="text-[13px] font-medium text-[#C7CEDD] mb-3">Primary goal</p>
+      <div class="grid grid-cols-3 gap-2" id="goalChips">
+        <button data-val="loss" class="chip py-2.5 rounded-xl text-[12px] text-[#C7CEDD]">Fat Loss</button>
+        <button data-val="gain" class="chip py-2.5 rounded-xl text-[12px] text-[#C7CEDD]">Muscle Gain</button>
+        <button data-val="maintain" class="chip py-2.5 rounded-xl text-[12px] text-[#C7CEDD]">Maintain</button>
+      </div>
+    </div>
+
+    <button id="saveProfileBtn" class="w-full bg-white text-[#0B0F17] font-medium text-[14px] py-3.5 rounded-2xl scale-tap mb-5">Save & recalculate</button>
+
+    <div class="glass rounded-3xl p-5 mb-8 fade-in">
+      <p class="text-[13px] font-medium text-[#C7CEDD] mb-4">Your daily targets</p>
+      <div class="grid grid-cols-2 gap-4" id="targetSummary"></div>
+      <div class="mt-4 pt-4 border-t border-white/10 flex justify-between text-[12px] text-[#6B7690]">
+        <span>BMR</span><span id="bmrOut" class="text-[#C7CEDD]">—</span>
+      </div>
+      <div class="mt-1.5 flex justify-between text-[12px] text-[#6B7690]">
+        <span>TDEE (maintenance)</span><span id="tdeeOut" class="text-[#C7CEDD]">—</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ANALYTICS TAB ===================== -->
+  <section id="tab-analytics" class="tab-view safe-top px-5">
+    <header class="mb-6">
+      <p class="text-[13px] text-[#6B7690]">Overview</p>
+      <h1 class="font-display text-[26px] font-semibold tracking-tight text-white">Analytics</h1>
+    </header>
+
+    <div class="glass rounded-3xl p-5 mb-5 fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-[13px] font-medium text-[#C7CEDD]">Calories — last 7 days</p>
+        <span class="text-[11px] text-[#6B7690]" id="weekAvgCal">avg —</span>
+      </div>
+      <div class="flex items-end justify-between gap-2 h-[120px]" id="weekBars"></div>
+    </div>
+
+    <div class="glass rounded-3xl p-5 mb-5 fade-in">
+      <p class="text-[13px] font-medium text-[#C7CEDD] mb-4">Weekly macro average vs target</p>
+      <div class="space-y-4" id="macroBarsWeek"></div>
+    </div>
+
+    <div class="glass rounded-3xl p-5 mb-5 fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-[13px] font-medium text-[#C7CEDD]">Last 30 days</p>
+        <span class="text-[11px] text-[#6B7690]" id="monthAvgCal">avg —</span>
+      </div>
+      <div class="grid grid-cols-3 gap-3 text-center" id="monthStats"></div>
+    </div>
+
+    <div class="glass rounded-3xl p-5 mb-8 fade-in">
+      <p class="text-[13px] font-medium text-[#C7CEDD] mb-4">Micronutrient trend (avg/day, 7d)</p>
+      <div class="space-y-3" id="microBars"></div>
+    </div>
+  </section>
+
+  <!-- ===================== ADVICE TAB ===================== -->
+  <section id="tab-advice" class="tab-view safe-top px-5">
+    <header class="mb-6">
+      <p class="text-[13px] text-[#6B7690]">Pulse Coach</p>
+      <h1 class="font-display text-[26px] font-semibold tracking-tight text-white">Advice & Insights</h1>
+    </header>
+    <div id="adviceList" class="space-y-3 mb-8"></div>
+  </section>
+
+</div>
+
+<!-- ===================== ADD-FOOD SHEET ===================== -->
+<div id="addSheetOverlay" class="fixed inset-0 bg-black/60 z-40 hidden" onclick="closeAddSheet(event)"></div>
+<div id="addSheet" class="fixed left-0 right-0 bottom-0 z-50 hidden">
+  <div class="sheet max-w-md mx-auto glass rounded-t-3xl p-6 safe-bottom">
+    <div class="w-10 h-1 bg-white/15 rounded-full mx-auto mb-5"></div>
+    <h3 id="sheetFoodName" class="font-display text-[19px] font-semibold text-white mb-1">Food name</h3>
+    <p id="sheetFoodPer" class="text-[12px] text-[#6B7690] mb-5">per serving</p>
+
+    <div class="flex items-center justify-between mb-5">
+      <span class="text-[13px] text-[#C7CEDD]">Quantity</span>
+      <div class="flex items-center gap-4 glass rounded-full px-2 py-1.5">
+        <button onclick="stepQty(-1)" class="w-8 h-8 rounded-full bg-white/5 text-white text-[18px] flex items-center justify-center scale-tap">−</button>
+        <span id="sheetQty" class="font-display text-[16px] text-white w-10 text-center">1</span>
+        <button onclick="stepQty(1)" class="w-8 h-8 rounded-full bg-white/5 text-white text-[18px] flex items-center justify-center scale-tap">+</button>
+      </div>
+    </div>
+
+    <p class="text-[13px] text-[#C7CEDD] mb-2">Meal</p>
+    <div class="grid grid-cols-4 gap-2 mb-5" id="sheetMealChips">
+      <button data-val="Breakfast" class="chip py-2 rounded-xl text-[11px] text-[#C7CEDD]">Breakfast</button>
+      <button data-val="Lunch" class="chip py-2 rounded-xl text-[11px] text-[#C7CEDD]">Lunch</button>
+      <button data-val="Dinner" class="chip py-2 rounded-xl text-[11px] text-[#C7CEDD]">Dinner</button>
+      <button data-val="Snacks" class="chip py-2 rounded-xl text-[11px] text-[#C7CEDD]">Snacks</button>
+    </div>
+
+    <div class="grid grid-cols-4 gap-2 mb-6 text-center">
+      <div class="glass rounded-xl py-2.5"><p id="sheetCal" class="text-[14px] font-semibold text-white">0</p><p class="text-[9.5px] text-[#6B7690]">kcal</p></div>
+      <div class="glass rounded-xl py-2.5"><p id="sheetP" class="text-[14px] font-semibold text-[#34D399]">0</p><p class="text-[9.5px] text-[#6B7690]">protein</p></div>
+      <div class="glass rounded-xl py-2.5"><p id="sheetC" class="text-[14px] font-semibold text-[#60A5FA]">0</p><p class="text-[9.5px] text-[#6B7690]">carbs</p></div>
+      <div class="glass rounded-xl py-2.5"><p id="sheetF" class="text-[14px] font-semibold text-[#F472B6]">0</p><p class="text-[9.5px] text-[#6B7690]">fat</p></div>
+    </div>
+
+    <button id="confirmAddBtn" class="w-full bg-white text-[#0B0F17] font-medium text-[14px] py-3.5 rounded-2xl scale-tap">Add to log</button>
+  </div>
+</div>
+
+<!-- ===================== TOAST ===================== -->
+<div id="toast" class="toast fixed bottom-28 left-1/2 -translate-x-1/2 z-50 hidden bg-white text-[#0B0F17] text-[13px] font-medium px-4 py-2.5 rounded-full whitespace-nowrap"></div>
+
+<!-- ===================== BOTTOM NAV ===================== -->
+<nav class="navbar fixed bottom-4 left-4 right-4 max-w-[360px] mx-auto rounded-[26px] px-2 py-2.5 z-30">
+  <div class="flex items-center justify-around">
+    <button class="nav-btn active flex flex-col items-center gap-1 px-2 py-1" data-tab="today">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span class="text-[10px]">Today</span>
+    </button>
+    <button class="nav-btn flex flex-col items-center gap-1 px-2 py-1" data-tab="body">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      <span class="text-[10px]">Body</span>
+    </button>
+    <button class="nav-btn flex flex-col items-center gap-1 px-2 py-1" data-tab="analytics">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+      <span class="text-[10px]">Analytics</span>
+    </button>
+    <button class="nav-btn flex flex-col items-center gap-1 px-2 py-1" data-tab="advice">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/><path d="M9 21h6"/></svg>
+      <span class="text-[10px]">Advice</span>
+    </button>
+  </div>
+</nav>
+
+<script>
+/* =========================================================================
+   PULSE — Local nutrition coach for Unez. Pure vanilla JS + localStorage.
+   ========================================================================= */
+
+/* ---------- Food Database ---------- */
+const FOOD_DB = [
+  {id:'roti',name:'Roti (whole wheat)',unit:'piece',cal:120,p:3,c:18,f:3.7,fib:3,ca:10,fe:1.2,na:95},
+  {id:'roti_ghee',name:'Roti with ghee',unit:'piece',cal:150,p:3,c:18,f:6.7,fib:3,ca:10,fe:1.2,na:95},
+  {id:'rice',name:'Rice (cooked)',unit:'katori',cal:195,p:4,c:43,f:0.4,fib:0.6,ca:10,fe:0.5,na:2},
+  {id:'brown_rice',name:'Brown rice (cooked)',unit:'katori',cal:170,p:4,c:36,f:1.5,fib:2,ca:10,fe:0.5,na:2},
+  {id:'dal_tadka',name:'Dal Tadka',unit:'katori',cal:180,p:9,c:20,f:7,fib:6,ca:40,fe:2.5,na:300},
+  {id:'paneer_bhurji',name:'Paneer Bhurji',unit:'katori',cal:265,p:15,c:6,f:20,fib:1,ca:300,fe:0.5,na:400},
+  {id:'chole',name:'Chole',unit:'katori',cal:210,p:8,c:28,f:7,fib:8,ca:60,fe:3,na:450},
+  {id:'rajma',name:'Rajma',unit:'katori',cal:210,p:10,c:30,f:5,fib:9,ca:50,fe:3,na:400},
+  {id:'chicken_curry',name:'Chicken Curry',unit:'katori',cal:260,p:22,c:8,f:16,fib:2,ca:30,fe:1.5,na:500},
+  {id:'butter_chicken',name:'Butter Chicken',unit:'katori',cal:330,p:18,c:8,f:25,fib:1,ca:60,fe:1,na:600},
+  {id:'fish_curry',name:'Fish Curry',unit:'katori',cal:200,p:20,c:6,f:11,fib:1,ca:50,fe:1,na:500},
+  {id:'grilled_chicken',name:'Grilled Chicken Breast',unit:'100g',cal:165,p:31,c:0,f:3.6,fib:0,ca:15,fe:1,na:74},
+  {id:'dosa',name:'Dosa (plain)',unit:'piece',cal:133,p:3,c:22,f:4,fib:1,ca:10,fe:0.8,na:200},
+  {id:'idli',name:'Idli',unit:'piece',cal:58,p:2,c:12,f:0.3,fib:0.5,ca:5,fe:0.4,na:100},
+  {id:'sambar',name:'Sambar',unit:'katori',cal:120,p:5,c:18,f:3,fib:4,ca:30,fe:1.5,na:350},
+  {id:'poha',name:'Poha',unit:'katori',cal:180,p:4,c:30,f:5,fib:2,ca:15,fe:1,na:250},
+  {id:'upma',name:'Upma',unit:'katori',cal:200,p:5,c:30,f:7,fib:2,ca:20,fe:1,na:300},
+  {id:'oats',name:'Oats (cooked, plain)',unit:'cup',cal:150,p:5,c:27,f:3,fib:4,ca:40,fe:2,na:5},
+  {id:'muesli',name:'Muesli',unit:'cup',cal:190,p:5,c:34,f:4,fib:4,ca:40,fe:2,na:50},
+  {id:'egg_boiled',name:'Egg (boiled)',unit:'piece',cal:78,p:6.3,c:0.6,f:5.3,fib:0,ca:25,fe:0.6,na:62},
+  {id:'egg_bhurji',name:'Egg Bhurji (2 eggs)',unit:'serving',cal:220,p:13,c:3,f:18,fib:0.5,ca:40,fe:1.2,na:320},
+  {id:'almonds',name:'Almonds',unit:'10 pieces',cal:70,p:2.5,c:2.5,f:6,fib:1.5,ca:30,fe:0.5,na:0},
+  {id:'walnuts',name:'Walnuts',unit:'5 halves',cal:98,p:2.3,c:2,f:9.8,fib:1,ca:14,fe:0.5,na:0},
+  {id:'peanuts',name:'Peanuts (roasted)',unit:'handful',cal:170,p:7,c:5,f:14,fib:2.5,ca:20,fe:1,na:5},
+  {id:'peanut_butter',name:'Peanut Butter',unit:'tbsp',cal:95,p:4,c:3,f:8,fib:1,ca:6,fe:0.3,na:75},
+  {id:'milk',name:'Milk (toned)',unit:'glass',cal:100,p:6.4,c:9.6,f:3.6,fib:0,ca:240,fe:0.1,na:100},
+  {id:'curd',name:'Curd / Yogurt (plain)',unit:'katori',cal:60,p:3.5,c:4.7,f:3.3,fib:0,ca:120,fe:0.1,na:40},
+  {id:'chai',name:'Chai (milk & sugar)',unit:'cup',cal:60,p:1.5,c:9,f:2,fib:0,ca:40,fe:0.1,na:15},
+  {id:'protein_shake',name:'Protein Shake (whey)',unit:'scoop',cal:120,p:24,c:3,f:1.5,fib:0,ca:100,fe:0.5,na:100},
+  {id:'sattu',name:'Sattu Drink',unit:'glass',cal:140,p:8,c:20,f:2,fib:5,ca:20,fe:2,na:200},
+  {id:'sprouts',name:'Sprouts (moong)',unit:'katori',cal:105,p:9,c:19,f:0.4,fib:8,ca:27,fe:1.7,na:5},
+  {id:'paneer_raw',name:'Cottage Cheese (paneer)',unit:'100g',cal:265,p:18,c:3.4,f:20,fib:0,ca:480,fe:0.2,na:20},
+  {id:'banana',name:'Banana',unit:'piece',cal:105,p:1.3,c:27,f:0.4,fib:3.1,ca:6,fe:0.3,na:1},
+  {id:'apple',name:'Apple',unit:'piece',cal:95,p:0.5,c:25,f:0.3,fib:4.4,ca:11,fe:0.2,na:2},
+  {id:'orange',name:'Orange',unit:'piece',cal:62,p:1.2,c:15.4,f:0.2,fib:3,ca:52,fe:0.1,na:0},
+  {id:'watermelon',name:'Watermelon',unit:'bowl',cal:45,p:0.9,c:11,f:0.2,fib:0.6,ca:11,fe:0.3,na:1},
+  {id:'cucumber',name:'Cucumber',unit:'piece',cal:30,p:1.3,c:6.5,f:0.2,fib:1,ca:15,fe:0.3,na:2},
+  {id:'green_salad',name:'Green Salad',unit:'bowl',cal:40,p:2,c:8,f:0.3,fib:3,ca:30,fe:0.8,na:10},
+  {id:'paratha',name:'Paratha (plain)',unit:'piece',cal:260,p:5,c:30,f:13,fib:3,ca:20,fe:1.5,na:200},
+  {id:'aloo_sabzi',name:'Aloo Sabzi',unit:'katori',cal:180,p:3,c:25,f:8,fib:3,ca:20,fe:1,na:300},
+  {id:'palak_paneer',name:'Palak Paneer',unit:'katori',cal:220,p:10,c:8,f:16,fib:4,ca:250,fe:3,na:450},
+  {id:'veg_biryani',name:'Vegetable Biryani',unit:'katori',cal:320,p:7,c:45,f:12,fib:4,ca:40,fe:1.5,na:500},
+  {id:'chicken_biryani',name:'Chicken Biryani',unit:'katori',cal:380,p:20,c:42,f:14,fib:2,ca:40,fe:1.5,na:600},
+  {id:'samosa',name:'Samosa',unit:'piece',cal:260,p:4,c:24,f:17,fib:2,ca:20,fe:1,na:300},
+  {id:'vada_pav',name:'Vada Pav',unit:'piece',cal:290,p:6,c:40,f:12,fib:2,ca:30,fe:1.2,na:450},
+  {id:'dhokla',name:'Dhokla',unit:'2 pieces',cal:90,p:3,c:15,f:2,fib:1,ca:20,fe:0.5,na:200},
+  {id:'bread',name:'Bread (whole wheat)',unit:'slice',cal:80,p:3,c:14,f:1,fib:2,ca:30,fe:0.8,na:150},
+  {id:'cheese_slice',name:'Cheese Slice',unit:'piece',cal:70,p:4,c:1,f:6,fib:0,ca:150,fe:0.1,na:300},
+  {id:'ghee',name:'Ghee',unit:'tsp',cal:45,p:0,c:0,f:5,fib:0,ca:0,fe:0,na:0},
+  {id:'pizza_slice',name:'Pizza Slice (veg)',unit:'slice',cal:220,p:8,c:28,f:8,fib:2,ca:150,fe:1,na:450},
+];
+
+/* ---------- State & Storage ---------- */
+const LS_PROFILE = 'pulse_profile_v1';
+const LS_LOGS = 'pulse_logs_v1';
+const MEALS = ['Breakfast','Lunch','Dinner','Snacks'];
+const ACTIVITY_FACTORS = {sedentary:1.2, light:1.375, moderate:1.55, very:1.725};
+
+let profile = null;
+let logs = [];
+let selectedDate = todayKey();
+let pendingFood = null;
+let pendingQty = 1;
+let pendingMeal = 'Breakfast';
+
+function todayKey(offset=0){
+  const d = new Date();
+  d.setDate(d.getDate()+offset);
+  return d.toISOString().slice(0,10);
+}
+let dateOffset = 0;
+
+function defaultProfile(){
+  return {
+    weight:78, targetWeight:70, height:171, age:27,
+    gender:'male', activity:'light', goal:'loss'
+  };
+}
+
+function loadProfile(){
+  const raw = localStorage.getItem(LS_PROFILE);
+  profile = raw ? JSON.parse(raw) : defaultProfile();
+  if(!raw) saveProfile(false);
+}
+function saveProfile(recalc=true){
+  localStorage.setItem(LS_PROFILE, JSON.stringify(profile));
+}
+function loadLogs(){
+  const raw = localStorage.getItem(LS_LOGS);
+  logs = raw ? JSON.parse(raw) : [];
+}
+function saveLogs(){
+  localStorage.setItem(LS_LOGS, JSON.stringify(logs));
+}
+
+/* ---------- Nutrition Engine ---------- */
+function computeTargets(p){
+  const bmr = p.gender === 'male'
+    ? 10*p.weight + 6.25*p.height - 5*p.age + 5
+    : 10*p.weight + 6.25*p.height - 5*p.age - 161;
+  const tdee = bmr * ACTIVITY_FACTORS[p.activity];
+  let calories;
+  if(p.goal === 'loss') calories = tdee * 0.8;
+  else if(p.goal === 'gain') calories = tdee * 1.15;
+  else calories = tdee;
+
+  const proteinFactor = p.goal === 'maintain' ? 1.6 : (p.goal === 'gain' ? 2.2 : 2.0);
+  const protein = p.weight * proteinFactor;
+  const fat = (calories * 0.25) / 9;
+  const carbs = Math.max(0, (calories - protein*4 - fat*9) / 4);
+  const fiber = (calories/1000) * 14;
+
+  return {
+    bmr: Math.round(bmr),
+    tdee: Math.round(tdee),
+    calories: Math.round(calories),
+    protein: Math.round(protein),
+    carbs: Math.round(carbs),
+    fat: Math.round(fat),
+    fiber: Math.round(fiber)
+  };
+}
+
+/* ---------- Tab Navigation ---------- */
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'analytics') renderAnalytics();
+    if(btn.dataset.tab === 'advice') renderAdvice();
+    if(btn.dataset.tab === 'body') renderBodyTab();
+    window.scrollTo(0,0);
+  });
+});
+
+/* ---------- Date Nav ---------- */
+document.getElementById('dateBack').addEventListener('click', ()=>{ dateOffset--; refreshDate(); });
+document.getElementById('dateFwd').addEventListener('click', ()=>{ if(dateOffset<0){dateOffset++; refreshDate();} });
+function refreshDate(){
+  selectedDate = todayKey(dateOffset);
+  const label = document.getElementById('dateLabel');
+  if(dateOffset===0) label.textContent = 'Today';
+  else if(dateOffset===-1) label.textContent = 'Yesterday';
+  else {
+    const d = new Date(); d.setDate(d.getDate()+dateOffset);
+    label.textContent = d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+  }
+  renderToday();
+}
+
+/* ---------- Today Tab Rendering ---------- */
+function getLogsForDate(dateStr){
+  return logs.filter(l=>l.date===dateStr);
+}
+
+function renderToday(){
+  const targets = computeTargets(profile);
+  const dayLogs = getLogsForDate(selectedDate);
+  const totals = sumLogs(dayLogs);
+
+  // Ring
+  const r = 86, circ = 2*Math.PI*r;
+  const pct = Math.min(1, totals.cal / Math.max(1,targets.calories));
+  const ring = document.getElementById('calRing');
+  ring.setAttribute('stroke-dasharray', circ.toFixed(1));
+  ring.setAttribute('stroke-dashoffset', (circ*(1-pct)).toFixed(1));
+  if(totals.cal > targets.calories) ring.setAttribute('stroke','#F87171');
+
+  document.getElementById('calRemaining').textContent = Math.max(0, targets.calories-totals.cal);
+  document.getElementById('calEaten').textContent = Math.round(totals.cal);
+  document.getElementById('calTarget').textContent = targets.calories;
+
+  const pill = document.getElementById('calStatusPill');
+  if(totals.cal > targets.calories){ pill.textContent='Over target'; pill.className='text-[11px] px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-300'; }
+  else if(pct > 0.85){ pill.textContent='Almost there'; pill.className='text-[11px] px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300'; }
+  else { pill.textContent='On track'; pill.className='text-[11px] px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/30 text-emerald-300'; }
+
+  // Macro bars
+  const macros = [
+    {label:'Protein', val:totals.p, target:targets.protein, color:'var(--protein)', unit:'g'},
+    {label:'Carbs', val:totals.c, target:targets.carbs, color:'var(--carbs)', unit:'g'},
+    {label:'Fat', val:totals.f, target:targets.fat, color:'var(--fat)', unit:'g'},
+    {label:'Fiber', val:totals.fib, target:targets.fiber, color:'var(--fiber)', unit:'g'},
+  ];
+  document.getElementById('macroBarsToday').innerHTML = macros.map(m=>macroBarHtml(m)).join('');
+
+  renderMealFeed(dayLogs);
+}
+
+function macroBarHtml(m){
+  const pct = Math.min(100, Math.round((m.val/Math.max(1,m.target))*100));
+  const done = m.val >= m.target;
+  return `<div>
+    <div class="flex justify-between items-center mb-1.5">
+      <span class="text-[12.5px] text-[#C7CEDD] flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full" style="background:${m.color}"></span>${m.label}
+        ${done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>' : ''}
+      </span>
+      <span class="text-[11.5px] text-[#6B7690]">${Math.round(m.val)} / ${m.target}${m.unit}</span>
+    </div>
+    <div class="h-2 bg-[#232B3C] rounded-full overflow-hidden">
+      <div class="bar-fill h-full rounded-full" style="width:${pct}%;background:${m.color}"></div>
+    </div>
+  </div>`;
+}
+
+function sumLogs(arr){
+  return arr.reduce((t,l)=>{
+    t.cal+=l.cal; t.p+=l.p; t.c+=l.c; t.f+=l.f; t.fib+=l.fib; t.ca+=l.ca; t.fe+=l.fe; t.na+=l.na;
+    return t;
+  }, {cal:0,p:0,c:0,f:0,fib:0,ca:0,fe:0,na:0});
+}
+
+function renderMealFeed(dayLogs){
+  const wrap = document.getElementById('mealFeed');
+  wrap.innerHTML = MEALS.map(meal=>{
+    const items = dayLogs.filter(l=>l.meal===meal);
+    const mealCal = items.reduce((s,i)=>s+i.cal,0);
+    const rows = items.length ? items.map(i=>`
+      <div class="flex items-center justify-between py-2.5 px-1 border-t border-white/5 first:border-t-0">
+        <div class="min-w-0">
+          <p class="text-[13.5px] text-white truncate">${i.name}</p>
+          <p class="text-[11px] text-[#6B7690]">${i.qty} × ${i.unit} · ${Math.round(i.cal)} kcal</p>
+        </div>
+        <button onclick="deleteLog('${i.id}')" class="ml-3 w-8 h-8 shrink-0 rounded-full bg-white/5 flex items-center justify-center scale-tap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A93AB" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+        </button>
+      </div>`).join('') : `<p class="text-[12.5px] text-[#5D6A82] py-3">No items logged yet</p>`;
+    return `<div class="glass rounded-3xl p-5 fade-in">
+      <div class="flex justify-between items-center mb-1">
+        <p class="text-[13px] font-medium text-[#C7CEDD]">${meal}</p>
+        <span class="text-[11px] text-[#6B7690]">${Math.round(mealCal)} kcal</span>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+}
+
+function deleteLog(id){
+  logs = logs.filter(l=>l.id!==id);
+  saveLogs();
+  renderToday();
+  showToast('Removed');
+}
+
+/* ---------- Food Search & Add Sheet ---------- */
+const searchInput = document.getElementById('foodSearch');
+const searchResults = document.getElementById('searchResults');
+searchInput.addEventListener('input', ()=>{
+  const q = searchInput.value.trim().toLowerCase();
+  if(!q){ searchResults.innerHTML=''; return; }
+  const matches = FOOD_DB.filter(f=>f.name.toLowerCase().includes(q)).slice(0,8);
+  searchResults.innerHTML = matches.map(f=>`
+    <button class="food-row w-full text-left px-4 py-3 bg-[#0F1420] border-b border-white/5 last:border-b-0 flex justify-between items-center" onclick="openAddSheet('${f.id}')">
+      <span class="text-[13.5px] text-white">${f.name}</span>
+      <span class="text-[11px] text-[#6B7690]">${f.cal} kcal / ${f.unit}</span>
+    </button>`).join('');
+  searchResults.className = matches.length ? 'mt-2 rounded-2xl overflow-hidden border border-white/10' : 'mt-2 rounded-2xl overflow-hidden border border-white/0';
+});
+
+function openAddSheet(foodId){
+  pendingFood = FOOD_DB.find(f=>f.id===foodId);
+  pendingQty = 1;
+  pendingMeal = defaultMealForNow();
+  document.getElementById('sheetFoodName').textContent = pendingFood.name;
+  document.getElementById('sheetFoodPer').textContent = `${pendingFood.cal} kcal per ${pendingFood.unit}`;
+  document.getElementById('sheetQty').textContent = pendingQty;
+  setMealChip(pendingMeal);
+  updateSheetTotals();
+  document.getElementById('addSheetOverlay').classList.remove('hidden');
+  document.getElementById('addSheet').classList.remove('hidden');
+  searchInput.value=''; searchResults.innerHTML='';
+}
+function closeAddSheet(e){
+  if(e && e.target.id !== 'addSheetOverlay') return;
+  document.getElementById('addSheetOverlay').classList.add('hidden');
+  document.getElementById('addSheet').classList.add('hidden');
+}
+function defaultMealForNow(){
+  const h = new Date().getHours();
+  if(h<11) return 'Breakfast';
+  if(h<16) return 'Lunch';
+  if(h<19) return 'Snacks';
+  return 'Dinner';
+}
+function stepQty(dir){
+  pendingQty = Math.max(1, pendingQty + dir);
+  document.getElementById('sheetQty').textContent = pendingQty;
+  updateSheetTotals();
+}
+function updateSheetTotals(){
+  const f = pendingFood;
+  document.getElementById('sheetCal').textContent = Math.round(f.cal*pendingQty);
+  document.getElementById('sheetP').textContent = Math.round(f.p*pendingQty)+'g';
+  document.getElementById('sheetC').textContent = Math.round(f.c*pendingQty)+'g';
+  document.getElementById('sheetF').textContent = Math.round(f.f*pendingQty)+'g';
+}
+document.getElementById('sheetMealChips').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  pendingMeal = btn.dataset.val;
+  setMealChip(pendingMeal);
+});
+function setMealChip(val){
+  document.querySelectorAll('#sheetMealChips button').forEach(b=>{
+    b.classList.toggle('selected', b.dataset.val===val);
+  });
+}
+document.getElementById('confirmAddBtn').addEventListener('click', ()=>{
+  const f = pendingFood;
+  logs.push({
+    id: 'log_'+Date.now()+'_'+Math.floor(Math.random()*1000),
+    date: selectedDate,
+    meal: pendingMeal,
+    name: f.name,
+    unit: f.unit,
+    qty: pendingQty,
+    cal: f.cal*pendingQty, p: f.p*pendingQty, c: f.c*pendingQty, f: f.f*pendingQty,
+    fib: f.fib*pendingQty, ca: f.ca*pendingQty, fe: f.fe*pendingQty, na: f.na*pendingQty
+  });
+  saveLogs();
+  closeAddSheet();
+  renderToday();
+  showToast(f.name+' added');
+});
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.add('hidden'), 1600);
+}
+
+/* ---------- Body & Goals Tab ---------- */
+function renderBodyTab(){
+  document.getElementById('in_weight').value = profile.weight;
+  document.getElementById('in_targetWeight').value = profile.targetWeight;
+  document.getElementById('in_height').value = profile.height;
+  document.getElementById('in_age').value = profile.age;
+  setChipGroup('genderChips', profile.gender);
+  setChipGroup('activityChips', profile.activity);
+  setChipGroup('goalChips', profile.goal);
+  renderTargetSummary();
+}
+function setChipGroup(containerId, val){
+  document.querySelectorAll('#'+containerId+' button').forEach(b=>{
+    b.classList.toggle('selected', b.dataset.val===val);
+  });
+}
+['genderChips','activityChips','goalChips'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', (e)=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    setChipGroup(id, btn.dataset.val);
+  });
+});
+document.getElementById('saveProfileBtn').addEventListener('click', ()=>{
+  profile.weight = parseFloat(document.getElementById('in_weight').value) || profile.weight;
+  profile.targetWeight = parseFloat(document.getElementById('in_targetWeight').value) || profile.targetWeight;
+  profile.height = parseFloat(document.getElementById('in_height').value) || profile.height;
+  profile.age = parseInt(document.getElementById('in_age').value) || profile.age;
+  profile.gender = document.querySelector('#genderChips .selected')?.dataset.val || profile.gender;
+  profile.activity = document.querySelector('#activityChips .selected')?.dataset.val || profile.activity;
+  profile.goal = document.querySelector('#goalChips .selected')?.dataset.val || profile.goal;
+  saveProfile();
+  renderTargetSummary();
+  renderToday();
+  showToast('Targets updated');
+});
+function renderTargetSummary(){
+  const t = computeTargets(profile);
+  document.getElementById('bmrOut').textContent = t.bmr + ' kcal';
+  document.getElementById('tdeeOut').textContent = t.tdee + ' kcal';
+  const cards = [
+    {label:'Calories', val:t.calories+' kcal', color:'var(--cal)'},
+    {label:'Protein', val:t.protein+'g', color:'var(--protein)'},
+    {label:'Carbs', val:t.carbs+'g', color:'var(--carbs)'},
+    {label:'Fat', val:t.fat+'g', color:'var(--fat)'},
+  ];
+  document.getElementById('targetSummary').innerHTML = cards.map(c=>`
+    <div class="bg-[#0F1420] border border-white/10 rounded-xl p-3">
+      <p class="text-[10.5px] text-[#6B7690] mb-1">${c.label}</p>
+      <p class="font-display text-[16px] font-semibold" style="color:${c.color}">${c.val}</p>
+    </div>`).join('');
+}
+
+/* ---------- Analytics Tab ---------- */
+function last7Dates(){
+  const arr = [];
+  for(let i=6;i>=0;i--) arr.push(todayKey(-i));
+  return arr;
+}
+function last30Dates(){
+  const arr = [];
+  for(let i=29;i>=0;i--) arr.push(todayKey(-i));
+  return arr;
+}
+function renderAnalytics(){
+  const targets = computeTargets(profile);
+  const week = last7Dates().map(d=>({date:d, totals: sumLogs(getLogsForDate(d))}));
+  const maxCal = Math.max(targets.calories, ...week.map(w=>w.totals.cal), 1);
+
+  document.getElementById('weekBars').innerHTML = week.map(w=>{
+    const h = Math.max(4, Math.round((w.totals.cal/maxCal)*100));
+    const dow = new Date(w.date).toLocaleDateString('en-IN',{weekday:'short'}).slice(0,1);
+    const over = w.totals.cal > targets.calories;
+    return `<div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+      <div class="w-full rounded-lg bar-fill" style="height:${h}%;background:${over?'#F87171':'linear-gradient(180deg,var(--cal),var(--cal2))'}"></div>
+      <span class="text-[10px] text-[#5D6A82]">${dow}</span>
+    </div>`;
+  }).join('');
+
+  const daysWithData = week.filter(w=>w.totals.cal>0);
+  const weekAvg = daysWithData.length ? Math.round(daysWithData.reduce((s,w)=>s+w.totals.cal,0)/daysWithData.length) : 0;
+  document.getElementById('weekAvgCal').textContent = 'avg ' + weekAvg + ' kcal';
+
+  const weekTotals = week.reduce((acc,w)=>{
+    acc.p+=w.totals.p; acc.c+=w.totals.c; acc.f+=w.totals.f; acc.fib+=w.totals.fib;
+    acc.ca+=w.totals.ca; acc.fe+=w.totals.fe; acc.na+=w.totals.na; return acc;
+  }, {p:0,c:0,f:0,fib:0,ca:0,fe:0,na:0});
+  const n = Math.max(1, daysWithData.length);
+  const macros = [
+    {label:'Protein', val:weekTotals.p/n, target:targets.protein, color:'var(--protein)', unit:'g'},
+    {label:'Carbs', val:weekTotals.c/n, target:targets.carbs, color:'var(--carbs)', unit:'g'},
+    {label:'Fat', val:weekTotals.f/n, target:targets.fat, color:'var(--fat)', unit:'g'},
+    {label:'Fiber', val:weekTotals.fib/n, target:targets.fiber, color:'var(--fiber)', unit:'g'},
+  ];
+  document.getElementById('macroBarsWeek').innerHTML = macros.map(m=>macroBarHtml(m)).join('');
+
+  // Month stats
+  const month = last30Dates().map(d=>sumLogs(getLogsForDate(d)));
+  const monthActive = month.filter(m=>m.cal>0);
+  const monthAvg = monthActive.length ? Math.round(monthActive.reduce((s,m)=>s+m.cal,0)/monthActive.length) : 0;
+  document.getElementById('monthAvgCal').textContent = 'avg ' + monthAvg + ' kcal';
+  document.getElementById('monthStats').innerHTML = `
+    <div><p class="font-display text-[18px] text-white">${monthActive.length}</p><p class="text-[10.5px] text-[#6B7690]">days logged</p></div>
+    <div><p class="font-display text-[18px] text-white">${Math.round(monthActive.reduce((s,m)=>s+m.p,0)/Math.max(1,monthActive.length))}g</p><p class="text-[10.5px] text-[#6B7690]">avg protein</p></div>
+    <div><p class="font-display text-[18px] text-white">${monthAvg}</p><p class="text-[10.5px] text-[#6B7690]">avg kcal</p></div>`;
+
+  const micros = [
+    {label:'Calcium', val:weekTotals.ca/n, target:1000, color:'#A78BFA', unit:'mg'},
+    {label:'Iron', val:weekTotals.fe/n, target:18, color:'#FBBF24', unit:'mg'},
+    {label:'Sodium', val:weekTotals.na/n, target:2300, color:'#FB7185', unit:'mg'},
+  ];
+  document.getElementById('microBars').innerHTML = micros.map(m=>macroBarHtml(m)).join('');
+}
+
+/* ---------- Advice Tab ("Pulse Coach") ---------- */
+function renderAdvice(){
+  const targets = computeTargets(profile);
+  const week = last7Dates().map(d=>sumLogs(getLogsForDate(d)));
+  const active = week.filter(w=>w.cal>0);
+  const n = Math.max(1, active.length);
+  const avg = active.reduce((acc,w)=>{
+    acc.cal+=w.cal; acc.p+=w.p; acc.c+=w.c; acc.f+=w.f; acc.fib+=w.fib; acc.ca+=w.ca; acc.fe+=w.fe; acc.na+=w.na;
+    return acc;
+  }, {cal:0,p:0,c:0,f:0,fib:0,ca:0,fe:0,na:0});
+  Object.keys(avg).forEach(k=>avg[k]/=n);
+
+  const todayTotals = sumLogs(getLogsForDate(selectedDate));
+  const tips = [];
+
+  if(active.length===0){
+    tips.push({icon:'👋', title:'Start logging', text:'Log a few meals from the Today tab and Pulse Coach will start giving you personalized tips based on your real trends.'});
+  } else {
+    if(avg.p < targets.protein*0.7){
+      tips.push({icon:'💪', title:'Protein is running low', text:`You're averaging ${Math.round(avg.p)}g against a ${targets.protein}g target. Add paneer bhurji, sattu, sprouts, boiled eggs or a protein shake to close the gap.`});
+    } else if(avg.p >= targets.protein){
+      tips.push({icon:'✅', title:'Protein on point', text:`Averaging ${Math.round(avg.p)}g/day — right at or above your ${targets.protein}g target. Keep this rhythm going.`});
+    }
+    if(avg.fib < targets.fiber*0.7){
+      tips.push({icon:'🌾', title:'Fiber needs a boost', text:`Averaging ${Math.round(avg.fib)}g vs a ${targets.fiber}g target. Add sprouts, rajma, chole, green salad or a whole fruit at snack time.`});
+    }
+    if(avg.fe < 12){
+      tips.push({icon:'🩸', title:'Iron looks low', text:`Around ${avg.fe.toFixed(1)}mg/day on average. Rajma, chole, sprouts and dal are easy plant sources to lean on.`});
+    }
+    if(avg.ca < 700){
+      tips.push({icon:'🦴', title:'Calcium could be higher', text:`Averaging ${Math.round(avg.ca)}mg/day. A glass of milk, curd, or paneer bhurji can help close this out.`});
+    }
+    if(avg.na > 2300){
+      tips.push({icon:'🧂', title:'Sodium is running high', text:`Averaging ${Math.round(avg.na)}mg/day, above the 2300mg guideline. Watch salty curries, samosas and packaged snacks.`});
+    }
+    if(avg.cal > targets.calories*1.1){
+      tips.push({icon:'📉', title:'Calories trending above target', text:`Averaging ${Math.round(avg.cal)} kcal vs a ${targets.calories} kcal target — worth trimming portion sizes on rice, paratha or fried snacks.`});
+    } else if(avg.cal < targets.calories*0.75 && active.length>=2){
+      tips.push({icon:'📈', title:'Calories running low', text:`Averaging ${Math.round(avg.cal)} kcal vs a ${targets.calories} kcal target. Make sure you're eating consistently to support your ${profile.goal==='gain'?'muscle gain':'energy levels'}.`});
+    }
+    if(todayTotals.cal===0){
+      tips.push({icon:'📝', title:'Nothing logged today yet', text:'Add your first meal from the Today tab to keep your streak and trends accurate.'});
+    }
+  }
+  if(tips.length===0){
+    tips.push({icon:'🎯', title:'You are dialed in', text:'Your macros are tracking close to target across the week. Keep the consistency going.'});
+  }
+
+  document.getElementById('adviceList').innerHTML = tips.map(t=>`
+    <div class="glass rounded-3xl p-5 fade-in flex gap-3.5">
+      <span class="text-[22px] leading-none">${t.icon}</span>
+      <div class="min-w-0">
+        <p class="text-[14px] font-medium text-white mb-1">${t.title}</p>
+        <p class="text-[12.5px] text-[#9AA4BC] leading-relaxed">${t.text}</p>
+      </div>
+    </div>`).join('');
+}
+
+/* ---------- Init ---------- */
+function greeting(){
+  const h = new Date().getHours();
+  if(h<12) return 'Good morning';
+  if(h<17) return 'Good afternoon';
+  return 'Good evening';
+}
+function init(){
+  loadProfile();
+  loadLogs();
+  document.getElementById('greetingLine').textContent = greeting();
+  refreshDate();
+  renderBodyTab();
+}
+init();
+</script>
+</body>
+</html>
